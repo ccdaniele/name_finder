@@ -7,6 +7,7 @@ import type {
   ValidatedName,
   FailedName,
   PreferenceSummary,
+  ValidationConfig,
 } from "@/lib/types";
 
 interface ResultsListProps {
@@ -14,6 +15,8 @@ interface ResultsListProps {
   failedNames: FailedName[];
   preferenceSummary: PreferenceSummary;
   interviewInsights: string;
+  exclusionNames: string[];
+  validationConfig: ValidationConfig;
   onUpdateNames: (names: ValidatedName[]) => void;
 }
 
@@ -25,6 +28,8 @@ export function ResultsList({
   failedNames,
   preferenceSummary,
   interviewInsights,
+  exclusionNames,
+  validationConfig,
   onUpdateNames,
 }: ResultsListProps) {
   const [sortBy, setSortBy] = useState<SortBy>("score");
@@ -77,6 +82,7 @@ export function ResultsList({
               },
             ],
             existingNames: validatedNames.map((n) => n.generated.name),
+            exclusionNames,
           }),
         });
 
@@ -90,6 +96,7 @@ export function ResultsList({
             body: JSON.stringify({
               generated: names[0],
               preferenceSummary,
+              validationConfig,
             }),
           });
 
@@ -108,7 +115,7 @@ export function ResultsList({
         setRegeneratingIndex(null);
       }
     },
-    [validatedNames, preferenceSummary, interviewInsights, onUpdateNames]
+    [validatedNames, preferenceSummary, interviewInsights, exclusionNames, validationConfig, onUpdateNames]
   );
 
   const handleExport = async (format: "pdf" | "csv") => {

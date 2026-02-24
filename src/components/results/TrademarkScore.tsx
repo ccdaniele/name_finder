@@ -1,10 +1,11 @@
 "use client";
 
-import type { TrademarkabilityScore } from "@/lib/types";
+import type { TrademarkabilityScore, ValidationResult } from "@/lib/types";
 
 interface TrademarkScoreProps {
   score: TrademarkabilityScore;
   compact?: boolean;
+  validation?: ValidationResult;
 }
 
 const GRADE_COLORS: Record<string, string> = {
@@ -15,7 +16,7 @@ const GRADE_COLORS: Record<string, string> = {
   F: "text-red-500",
 };
 
-export function TrademarkScore({ score, compact = false }: TrademarkScoreProps) {
+export function TrademarkScore({ score, compact = false, validation }: TrademarkScoreProps) {
   if (compact) {
     return (
       <div className="flex items-center gap-2">
@@ -87,6 +88,16 @@ export function TrademarkScore({ score, compact = false }: TrademarkScoreProps) 
           value={score.breakdown.distinctiveness}
         />
         <ScoreBar
+          label="Web Presence"
+          value={score.breakdown.webSearch}
+          skipped={validation?.webSearch?.skipped}
+        />
+        <ScoreBar
+          label="Trademark Risk"
+          value={score.breakdown.trademark}
+          skipped={validation?.trademark?.skipped}
+        />
+        <ScoreBar
           label="Conflict Risk"
           value={score.breakdown.conflictRisk}
         />
@@ -106,7 +117,19 @@ export function TrademarkScore({ score, compact = false }: TrademarkScoreProps) 
   );
 }
 
-function ScoreBar({ label, value }: { label: string; value: number }) {
+function ScoreBar({ label, value, skipped }: { label: string; value: number; skipped?: boolean }) {
+  if (skipped) {
+    return (
+      <div>
+        <div className="flex justify-between text-xs mb-0.5">
+          <span className="text-[var(--muted-foreground)]">{label}</span>
+          <span className="text-[var(--muted-foreground)] italic">Skipped</span>
+        </div>
+        <div className="w-full bg-[var(--muted)] rounded-full h-1" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between text-xs mb-0.5">

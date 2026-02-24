@@ -83,8 +83,11 @@ export async function searchForSimilarCompanies(
       prompt: buildWebSearchAssessmentPrompt(name, formattedResults, industry),
     });
 
+    const score = Math.max(0, 100 - assessment.conflictingEntities.length * 15);
+
     return {
-      passed: !assessment.hasConflict,
+      passed: true,
+      score,
       details: assessment.assessment,
       similarCompanies: assessment.conflictingEntities,
       aiAssessment: assessment.assessment,
@@ -93,6 +96,7 @@ export async function searchForSimilarCompanies(
     console.error(`Web search failed for "${name}":`, error);
     return {
       passed: true,
+      score: 100,
       details: "Web search unavailable — skipped",
       similarCompanies: [],
       aiAssessment: "Web search could not be completed. Proceeding with caution.",

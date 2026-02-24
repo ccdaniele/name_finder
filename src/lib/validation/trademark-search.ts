@@ -90,16 +90,28 @@ export async function searchTrademarks(
       }
     }
 
-    // Blocking conflict: high similarity + same class
+    // Blocking conflict: very high similarity + same class
     const hasBlockingConflict = conflicts.some(
-      (c) => c.similarityScore > 0.85 && c.overlappingClasses
+      (c) => c.similarityScore > 0.90 && c.overlappingClasses
     );
+
+    const sortedConflicts = conflicts.sort(
+      (a, b) => b.similarityScore - a.similarityScore
+    );
+
+    // Compute trademark score (0-100)
+    const maxSimilarity = Math.max(0, ...conflicts.map((c) => c.similarityScore));
+    const hasClassOverlap = conflicts.some((c) => c.overlappingClasses);
+    let score = 100;
+    score -= conflicts.length * 15;
+    score -= maxSimilarity * 30;
+    if (hasClassOverlap) score -= 20;
+    score = Math.max(0, Math.min(100, Math.round(score)));
 
     return {
       passed: !hasBlockingConflict,
-      conflicts: conflicts.sort(
-        (a, b) => b.similarityScore - a.similarityScore
-      ),
+      score,
+      conflicts: sortedConflicts,
       riskLevel: hasBlockingConflict
         ? "high"
         : conflicts.length > 0
@@ -110,6 +122,7 @@ export async function searchTrademarks(
     console.error(`Trademark search failed for "${name}":`, error);
     return {
       passed: true,
+      score: 100,
       conflicts: [],
       riskLevel: "low",
     };

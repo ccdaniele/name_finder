@@ -63,15 +63,28 @@ When you have gathered enough insights (after 5-8 exchanges), include [INTERVIEW
 export function buildGenerationPrompt(
   preferenceSummary: PreferenceSummary,
   interviewInsights: string,
-  count: number
+  count: number,
+  exclusionNames?: string[]
 ): string {
-  return `You are a world-class brand naming expert. Generate exactly ${count} unique brand name candidates.
+  let prompt = `You are a world-class brand naming expert. Generate exactly ${count} unique brand name candidates.
 
 ## Context from Analysis
 ${JSON.stringify(preferenceSummary, null, 2)}
 
 ## Additional Insights from Interview
-${interviewInsights}
+${interviewInsights}`;
+
+  if (exclusionNames && exclusionNames.length > 0) {
+    prompt += `
+
+## Excluded Names (DO NOT generate these or similar-sounding names)
+The following names have been used in previous searches or are explicitly excluded.
+Do NOT generate any of these exact names, and also avoid names that sound similar to, rhyme with, or could be confused with any of them.
+
+${exclusionNames.join(", ")}`;
+  }
+
+  prompt += `
 
 ## Requirements for Each Name
 
@@ -105,6 +118,8 @@ For each name provide:
 - Its distinctiveness category (suggestive, arbitrary, or fanciful)
 - How it specifically relates to the user's inputs
 - Linguistic notes (etymology, phonetics, syllable count, multilingual notes)`;
+
+  return prompt;
 }
 
 export function buildReplacementPrompt(
@@ -112,9 +127,10 @@ export function buildReplacementPrompt(
   interviewInsights: string,
   failedNames: Array<{ name: string; reason: string }>,
   existingNames: string[],
-  count: number
+  count: number,
+  exclusionNames?: string[]
 ): string {
-  return `You are a world-class brand naming expert. Generate exactly ${count} replacement brand name candidates.
+  let prompt = `You are a world-class brand naming expert. Generate exactly ${count} replacement brand name candidates.
 
 ## Context
 ${JSON.stringify(preferenceSummary, null, 2)}
@@ -126,10 +142,23 @@ ${interviewInsights}
 ${existingNames.join(", ")}
 
 ## Names That Failed Validation (avoid similar approaches)
-${failedNames.map((f) => `- "${f.name}": ${f.reason}`).join("\n")}
+${failedNames.map((f) => `- "${f.name}": ${f.reason}`).join("\n")}`;
+
+  if (exclusionNames && exclusionNames.length > 0) {
+    prompt += `
+
+## Permanently Excluded Names (DO NOT generate these or similar-sounding names)
+These names are from previous searches or user exclusion lists. Avoid exact matches AND similar-sounding alternatives.
+
+${exclusionNames.join(", ")}`;
+  }
+
+  prompt += `
 
 ## Requirements
 Same requirements as before: Suggestive/Arbitrary/Fanciful on Abercrombie spectrum, SMILE framework, no SCRATCH pitfalls, domain-viable, pronounceable. Generate creative alternatives that avoid the same pitfalls as the failed names.`;
+
+  return prompt;
 }
 
 export function buildWebSearchAssessmentPrompt(

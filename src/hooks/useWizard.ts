@@ -6,13 +6,19 @@ import type {
   PreferenceSummary,
   ValidatedName,
   FailedName,
+  ValidationConfig,
 } from "@/lib/types";
+import {
+  loadValidationConfig,
+  saveValidationConfig,
+} from "@/lib/storage/validation-config-storage";
 
 interface WizardState {
   step: WizardStep;
   userText: string;
   file: File | null;
   nameCount: number;
+  validationConfig: ValidationConfig;
   preferenceSummary: PreferenceSummary | null;
   interviewInsights: string;
   validatedNames: ValidatedName[];
@@ -21,21 +27,24 @@ interface WizardState {
   error: string | null;
 }
 
-const INITIAL_STATE: WizardState = {
-  step: "input",
-  userText: "",
-  file: null,
-  nameCount: 20,
-  preferenceSummary: null,
-  interviewInsights: "",
-  validatedNames: [],
-  failedNames: [],
-  isLoading: false,
-  error: null,
-};
+function createInitialState(): WizardState {
+  return {
+    step: "input",
+    userText: "",
+    file: null,
+    nameCount: 20,
+    validationConfig: loadValidationConfig(),
+    preferenceSummary: null,
+    interviewInsights: "",
+    validatedNames: [],
+    failedNames: [],
+    isLoading: false,
+    error: null,
+  };
+}
 
 export function useWizard() {
-  const [state, setState] = useState<WizardState>(INITIAL_STATE);
+  const [state, setState] = useState<WizardState>(createInitialState);
 
   const setStep = useCallback((step: WizardStep) => {
     setState((prev) => ({ ...prev, step, error: null }));
@@ -53,6 +62,11 @@ export function useWizard() {
     setState((prev) => ({ ...prev, nameCount }));
   }, []);
 
+  const setValidationConfig = useCallback((validationConfig: ValidationConfig) => {
+    setState((prev) => ({ ...prev, validationConfig }));
+    saveValidationConfig(validationConfig);
+  }, []);
+
   const setPreferenceSummary = useCallback(
     (preferenceSummary: PreferenceSummary) => {
       setState((prev) => ({ ...prev, preferenceSummary }));
@@ -62,6 +76,14 @@ export function useWizard() {
 
   const setInterviewInsights = useCallback((interviewInsights: string) => {
     setState((prev) => ({ ...prev, interviewInsights }));
+  }, []);
+
+  const setValidatedNames = useCallback((validatedNames: ValidatedName[]) => {
+    setState((prev) => ({ ...prev, validatedNames }));
+  }, []);
+
+  const setFailedNames = useCallback((failedNames: FailedName[]) => {
+    setState((prev) => ({ ...prev, failedNames }));
   }, []);
 
   const addValidatedName = useCallback((name: ValidatedName) => {
@@ -98,7 +120,7 @@ export function useWizard() {
   }, []);
 
   const reset = useCallback(() => {
-    setState(INITIAL_STATE);
+    setState(createInitialState());
   }, []);
 
   return {
@@ -107,8 +129,11 @@ export function useWizard() {
     setUserText,
     setFile,
     setNameCount,
+    setValidationConfig,
     setPreferenceSummary,
     setInterviewInsights,
+    setValidatedNames,
+    setFailedNames,
     addValidatedName,
     addFailedName,
     replaceValidatedName,

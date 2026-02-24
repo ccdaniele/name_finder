@@ -67,11 +67,20 @@ function generateReport(
   name: string,
   category: string,
   grade: string,
-  scores: { distinctiveness: number; conflictRisk: number; registrability: number },
+  scores: {
+    distinctiveness: number;
+    conflictRisk: number;
+    registrability: number;
+    webSearch: number;
+    trademark: number;
+  },
+  webSearchResult: WebSearchResult,
+  trademarkResult: TrademarkResult,
   aiReasoning: string
 ): string {
   const parts: string[] = [];
 
+  // Distinctiveness summary
   if (scores.distinctiveness >= 85) {
     parts.push(
       `"${name}" is a ${category} name, providing strong inherent trademark protection.`
@@ -86,16 +95,32 @@ function generateReport(
     );
   }
 
-  if (scores.conflictRisk >= 80) {
-    parts.push("No significant trademark conflicts were identified.");
-  } else if (scores.conflictRisk >= 50) {
+  // Web search summary
+  if (webSearchResult.similarCompanies.length > 0) {
     parts.push(
-      "Some potentially similar marks exist but do not appear to pose a blocking conflict."
+      `Web search found ${webSearchResult.similarCompanies.length} similar entit${webSearchResult.similarCompanies.length === 1 ? "y" : "ies"}: ${webSearchResult.similarCompanies.join(", ")}. ${webSearchResult.aiAssessment}`
     );
   } else {
-    parts.push(
-      "There are trademark conflicts that may require further professional analysis."
-    );
+    parts.push("No similar companies or brands were found in web search results.");
+  }
+
+  // Trademark summary
+  if (trademarkResult.conflicts.length > 0) {
+    const topConflict = trademarkResult.conflicts[0];
+    const conflictSummary = `${trademarkResult.conflicts.length} trademark conflict${trademarkResult.conflicts.length === 1 ? "" : "s"} found. Most similar: "${topConflict.registeredName}" (${(topConflict.similarityScore * 100).toFixed(0)}% similarity${topConflict.overlappingClasses ? ", class overlap" : ""}).`;
+    parts.push(conflictSummary);
+
+    if (scores.conflictRisk >= 50) {
+      parts.push(
+        "These do not appear to pose a blocking conflict but warrant review."
+      );
+    } else {
+      parts.push(
+        "These conflicts may require further professional analysis before proceeding."
+      );
+    }
+  } else {
+    parts.push("No significant trademark conflicts were identified.");
   }
 
   if (aiReasoning) {
@@ -121,9 +146,15 @@ export async function computeTrademarkabilityScore(
     webSearchResult,
     trademarkResult
   );
+  const webSearchScore = webSearchResult.score;
+  const trademarkScore = trademarkResult.score;
 
   const algorithmicScore = Math.round(
-    distinctiveness * 0.35 + conflictRisk * 0.35 + registrability * 0.3
+    distinctiveness * 0.25 +
+      conflictRisk * 0.25 +
+      registrability * 0.20 +
+      webSearchScore * 0.15 +
+      trademarkScore * 0.15
   );
 
   // Get AI adjustment
@@ -157,14 +188,28 @@ export async function computeTrademarkabilityScore(
 
   return {
     overall,
-    breakdown: { distinctiveness, conflictRisk, registrability },
+    breakdown: {
+      distinctiveness,
+      conflictRisk,
+      registrability,
+      webSearch: webSearchScore,
+      trademark: trademarkScore,
+    },
     aiAdjustment,
     grade,
     report: generateReport(
       name,
       distinctivenessCategory,
       grade,
-      { distinctiveness, conflictRisk, registrability },
+      {
+        distinctiveness,
+        conflictRisk,
+        registrability,
+        webSearch: webSearchScore,
+        trademark: trademarkScore,
+      },
+      webSearchResult,
+      trademarkResult,
       aiReasoning
     ),
   };
