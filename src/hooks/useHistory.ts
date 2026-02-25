@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   loadHistory,
   addSearchToHistory,
@@ -11,10 +11,17 @@ import {
   deleteSearchFromHistory,
   clearHistory,
 } from "@/lib/storage/history-storage";
-import type { SearchHistoryEntry, ExclusionEntry } from "@/lib/types";
+import type { HistoryData, SearchHistoryEntry, ExclusionEntry } from "@/lib/types";
+
+const EMPTY_HISTORY: HistoryData = { version: 1, searches: [], exclusionList: [] };
 
 export function useHistory() {
-  const [data, setData] = useState(() => loadHistory());
+  const [data, setData] = useState<HistoryData>(EMPTY_HISTORY);
+
+  // Hydrate from localStorage after mount to avoid SSR/client mismatch
+  useEffect(() => {
+    setData(loadHistory());
+  }, []);
 
   const refresh = useCallback(() => {
     setData(loadHistory());

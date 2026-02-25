@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type {
   WizardStep,
   PreferenceSummary,
@@ -11,6 +11,7 @@ import type {
 import {
   loadValidationConfig,
   saveValidationConfig,
+  getDefaultValidationConfig,
 } from "@/lib/storage/validation-config-storage";
 
 interface WizardState {
@@ -27,24 +28,28 @@ interface WizardState {
   error: string | null;
 }
 
-function createInitialState(): WizardState {
-  return {
-    step: "input",
-    userText: "",
-    file: null,
-    nameCount: 20,
-    validationConfig: loadValidationConfig(),
-    preferenceSummary: null,
-    interviewInsights: "",
-    validatedNames: [],
-    failedNames: [],
-    isLoading: false,
-    error: null,
-  };
-}
+const INITIAL_STATE: WizardState = {
+  step: "input",
+  userText: "",
+  file: null,
+  nameCount: 20,
+  validationConfig: getDefaultValidationConfig(),
+  preferenceSummary: null,
+  interviewInsights: "",
+  validatedNames: [],
+  failedNames: [],
+  isLoading: false,
+  error: null,
+};
 
 export function useWizard() {
-  const [state, setState] = useState<WizardState>(createInitialState);
+  const [state, setState] = useState<WizardState>(INITIAL_STATE);
+
+  // Hydrate validation config from localStorage after mount
+  useEffect(() => {
+    const saved = loadValidationConfig();
+    setState((prev) => ({ ...prev, validationConfig: saved }));
+  }, []);
 
   const setStep = useCallback((step: WizardStep) => {
     setState((prev) => ({ ...prev, step, error: null }));
@@ -120,7 +125,7 @@ export function useWizard() {
   }, []);
 
   const reset = useCallback(() => {
-    setState(createInitialState());
+    setState({ ...INITIAL_STATE, validationConfig: loadValidationConfig() });
   }, []);
 
   return {
