@@ -2,35 +2,44 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useHistory } from "@/hooks/useHistory";
+import { useSavedSearches } from "@/hooks/useSavedSearches";
 import { SearchHistoryCard } from "./SearchHistoryCard";
 import { ExclusionListManager } from "./ExclusionListManager";
+import type { SavedSearch } from "@/lib/types";
 
 interface HistoryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onReuse: (entry: SavedSearch) => void;
 }
 
 type Tab = "history" | "exclusions";
 
-export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
+export function HistoryDrawer({ isOpen, onClose, onReuse }: HistoryDrawerProps) {
   const [activeTab, setActiveTab] = useState<Tab>("history");
+
   const {
-    searches,
+    savedSearches,
+    deleteSearch: deleteSavedSearch,
+    refresh: refreshSaved,
+  } = useSavedSearches();
+
+  const {
     exclusionList,
     removeExclusion,
     clearExclusions,
     importExclusions,
     addManual,
-    deleteSearch,
-    refresh,
+    refresh: refreshHistory,
   } = useHistory();
 
   // Refresh data when drawer opens
   useEffect(() => {
     if (isOpen) {
-      refresh();
+      refreshSaved();
+      refreshHistory();
     }
-  }, [isOpen, refresh]);
+  }, [isOpen, refreshSaved, refreshHistory]);
 
   // Escape key to close
   const handleKeyDown = useCallback(
@@ -46,6 +55,14 @@ export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
       return () => document.removeEventListener("keydown", handleKeyDown);
     }
   }, [isOpen, handleKeyDown]);
+
+  const handleReuse = useCallback(
+    (entry: SavedSearch) => {
+      onReuse(entry);
+      onClose();
+    },
+    [onReuse, onClose]
+  );
 
   return (
     <>
@@ -65,7 +82,7 @@ export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-          <h2 className="text-base font-semibold">Search History</h2>
+          <h2 className="text-base font-semibold">Saved Searches</h2>
           <button
             onClick={onClose}
             className="p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
@@ -87,10 +104,10 @@ export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
-            History
-            {searches.length > 0 && (
+            Saved
+            {savedSearches.length > 0 && (
               <span className="ml-1.5 text-xs text-[var(--muted-foreground)]">
-                ({searches.length})
+                ({savedSearches.length})
               </span>
             )}
           </button>
@@ -115,18 +132,19 @@ export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
           {activeTab === "history" && (
             <div className="space-y-2">
-              {searches.length === 0 ? (
+              {savedSearches.length === 0 ? (
                 <p className="text-sm text-[var(--muted-foreground)] text-center py-8">
-                  No searches yet. Completed searches will appear here.
+                  No saved searches yet. Save a search after generation to reuse it later.
                 </p>
               ) : (
-                [...searches]
+                [...savedSearches]
                   .reverse()
                   .map((entry) => (
                     <SearchHistoryCard
                       key={entry.id}
                       entry={entry}
-                      onDelete={deleteSearch}
+                      onDelete={deleteSavedSearch}
+                      onReuse={handleReuse}
                     />
                   ))
               )}

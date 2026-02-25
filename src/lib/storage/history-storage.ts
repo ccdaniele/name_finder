@@ -91,6 +91,16 @@ export function addSearchToHistory(entry: SearchHistoryEntry): void {
   saveHistory(data);
 }
 
+export function addNamesToExclusions(
+  searchId: string,
+  validatedNames: ValidatedName[],
+  failedNames: FailedName[]
+): void {
+  const data = loadHistory();
+  addSearchNamesToExclusions(data, searchId, validatedNames, failedNames);
+  saveHistory(data);
+}
+
 export function getExclusionNames(): string[] {
   const data = loadHistory();
   return data.exclusionList.map((e) => e.name);

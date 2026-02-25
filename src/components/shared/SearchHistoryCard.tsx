@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { SearchHistoryEntry } from "@/lib/types";
+import type { SavedSearch } from "@/lib/types";
 
 interface SearchHistoryCardProps {
-  entry: SearchHistoryEntry;
+  entry: SavedSearch;
   onDelete: (id: string) => void;
+  onReuse: (entry: SavedSearch) => void;
 }
 
 function formatDate(iso: string): string {
@@ -19,22 +20,7 @@ function formatDate(iso: string): string {
   });
 }
 
-function gradeColor(grade: string): string {
-  switch (grade) {
-    case "A":
-      return "text-green-600";
-    case "B":
-      return "text-blue-600";
-    case "C":
-      return "text-yellow-600";
-    case "D":
-      return "text-orange-600";
-    default:
-      return "text-red-600";
-  }
-}
-
-export function SearchHistoryCard({ entry, onDelete }: SearchHistoryCardProps) {
+export function SearchHistoryCard({ entry, onDelete, onReuse }: SearchHistoryCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -49,13 +35,16 @@ export function SearchHistoryCard({ entry, onDelete }: SearchHistoryCardProps) {
             {entry.preferenceSummary.industry}
           </p>
           <p className="text-xs text-[var(--muted-foreground)]">
-            {formatDate(entry.createdAt)}
+            {formatDate(entry.createdAt)} &middot; {entry.nameCount} names
           </p>
         </button>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-xs font-semibold ${gradeColor(entry.stats.topGrade)}`}>
-            {entry.stats.topGrade}
-          </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => onReuse(entry)}
+            className="text-xs px-2 py-0.5 bg-[var(--primary)] text-[var(--primary-foreground)] rounded hover:opacity-90 transition-opacity"
+          >
+            Reuse
+          </button>
           {confirmDelete ? (
             <div className="flex gap-1">
               <button
@@ -86,18 +75,6 @@ export function SearchHistoryCard({ entry, onDelete }: SearchHistoryCardProps) {
         </div>
       </div>
 
-      <div className="flex gap-3 mt-1.5 text-xs text-[var(--muted-foreground)]">
-        <span>
-          <span className="text-green-600 font-medium">{entry.stats.passedCount}</span> passed
-        </span>
-        <span>
-          <span className="text-red-500 font-medium">{entry.stats.failedCount}</span> failed
-        </span>
-        <span>
-          Avg: <span className="font-medium text-[var(--foreground)]">{entry.stats.avgScore}</span>
-        </span>
-      </div>
-
       {expanded && (
         <div className="mt-3 pt-3 border-t border-[var(--border)]">
           <div className="space-y-1.5 text-xs text-[var(--muted-foreground)]">
@@ -114,28 +91,10 @@ export function SearchHistoryCard({ entry, onDelete }: SearchHistoryCardProps) {
               {entry.preferenceSummary.keyThemes.join(", ")}
             </p>
             <p>
-              <span className="font-medium text-[var(--foreground)]">Requested:</span>{" "}
-              {entry.requestedCount} names
+              <span className="font-medium text-[var(--foreground)]">Names:</span>{" "}
+              {entry.nameCount}
             </p>
           </div>
-
-          {entry.validatedNames.length > 0 && (
-            <div className="mt-2">
-              <p className="text-xs font-medium text-[var(--foreground)] mb-1">
-                Passed names:
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {entry.validatedNames.map((n) => (
-                  <span
-                    key={n.generated.name}
-                    className="text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded"
-                  >
-                    {n.generated.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -172,3 +172,17 @@ export interface ValidationConfig {
   domain: ValidationStepConfig & { tlds: string[] };
   trademark: ValidationStepConfig;
 }
+
+export interface SavedSearch {
+  id: string;
+  createdAt: string;
+  preferenceSummary: PreferenceSummary;
+  interviewInsights?: string;
+  validationConfig: ValidationConfig;
+  nameCount: number;
+}
+
+export interface SavedSearchData {
+  version: 1;
+  searches: SavedSearch[];
+}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useWizard } from "@/hooks/useWizard";
 import { useHistory } from "@/hooks/useHistory";
+import { useSavedSearches } from "@/hooks/useSavedSearches";
 import { StepIndicator } from "@/components/wizard/StepIndicator";
 import { InputStep } from "@/components/wizard/InputStep";
 import { SummaryStep } from "@/components/wizard/SummaryStep";
@@ -22,7 +23,7 @@ import type {
   PreferenceSummary,
   ValidatedName,
   FailedName,
-  SearchHistoryEntry,
+  SavedSearch,
 } from "@/lib/types";
 
 export default function Home() {
@@ -38,15 +39,18 @@ export default function Home() {
     setError,
     setValidatedNames,
     setFailedNames,
+    setSkipInterview,
     reset,
   } = useWizard();
 
-  const { exclusionNames, addSearch, clearExclusions } = useHistory();
+  const { exclusionNames, addExclusions, clearExclusions } = useHistory();
+  const { addSearch: addSavedSearch } = useSavedSearches();
 
   const generationRef = useRef<GenerationStepHandle>(null);
   const [showStartOverModal, setShowStartOverModal] = useState(false);
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
   const [showExclusionChoiceModal, setShowExclusionChoiceModal] = useState(false);
+  const [searchSaved, setSearchSaved] = useState(false);
 
   // Load saved session on mount
   useEffect(() => {
@@ -63,7 +67,12 @@ export default function Home() {
 
   const handleSummaryConfirm = (updated: PreferenceSummary) => {
     setPreferenceSummary(updated);
-    setStep("interview");
+    if (state.skipInterview) {
+      setStep("generation");
+      setSkipInterview(false);
+    } else {
+      setStep("interview");
+    }
   };
 
   const handleInterviewComplete = (insights: string) => {
@@ -82,49 +91,38 @@ export default function Home() {
     session.failedNames = failed;
     saveSession(session);
 
-    // Save to search history and add all names to exclusion list
-    const avgScore =
-      validated.length > 0
-        ? Math.round(
-            validated.reduce(
-              (sum, n) => sum + n.validation.trademarkabilityScore.overall,
-              0
-            ) / validated.length
-          )
-        : 0;
-
-    const topGrade =
-      validated.length > 0
-        ? (validated.reduce(
-            (best, n) =>
-              n.validation.trademarkabilityScore.grade < best
-                ? n.validation.trademarkabilityScore.grade
-                : best,
-            "F" as "A" | "B" | "C" | "D" | "F"
-          ) as "A" | "B" | "C" | "D" | "F")
-        : ("F" as const);
-
-    const historyEntry: SearchHistoryEntry = {
-      id: session.id,
-      createdAt: session.createdAt,
-      preferenceSummary: state.preferenceSummary!,
-      interviewInsights: state.interviewInsights,
-      requestedCount: state.nameCount,
-      validatedNames: validated,
-      failedNames: failed,
-      stats: {
-        totalGenerated: validated.length + failed.length,
-        passedCount: validated.length,
-        failedCount: failed.length,
-        avgScore,
-        topGrade,
-      },
-    };
-    addSearch(historyEntry);
+    // Auto-add all names to exclusion list (decoupled from saving)
+    addExclusions(session.id, validated, failed);
 
     setValidatedNames(validated);
     setFailedNames(failed);
+    setSearchSaved(false);
     setStep("results");
+  };
+
+  const handleSaveSearch = () => {
+    const savedSearch: SavedSearch = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      preferenceSummary: state.preferenceSummary!,
+      interviewInsights: state.interviewInsights || undefined,
+      validationConfig: state.validationConfig,
+      nameCount: state.nameCount,
+    };
+    addSavedSearch(savedSearch);
+    setSearchSaved(true);
+  };
+
+  const handleReuse = (entry: SavedSearch) => {
+    setPreferenceSummary(entry.preferenceSummary);
+    setInterviewInsights(entry.interviewInsights || "");
+    setValidationConfig(entry.validationConfig);
+    setNameCount(entry.nameCount);
+    setSkipInterview(true);
+    setValidatedNames([]);
+    setFailedNames([]);
+    setSearchSaved(false);
+    setStep("summary");
   };
 
   const handleStartOver = () => {
@@ -170,7 +168,7 @@ export default function Home() {
           <button
             onClick={() => setShowHistoryDrawer(true)}
             className="p-1.5 border border-[var(--border)] rounded-md hover:bg-[var(--muted)] transition-colors"
-            title="Search history & exclusions"
+            title="Saved searches & exclusions"
           >
             <svg
               className="w-4 h-4"
@@ -224,7 +222,11 @@ export default function Home() {
         <SummaryStep
           summary={state.preferenceSummary}
           onConfirm={handleSummaryConfirm}
-          onBack={() => setStep("input")}
+          onBack={() => {
+            setSkipInterview(false);
+            setStep("input");
+          }}
+          skipInterview={state.skipInterview}
         />
       )}
 
@@ -257,6 +259,8 @@ export default function Home() {
           interviewInsights={state.interviewInsights}
           exclusionNames={exclusionNames}
           validationConfig={state.validationConfig}
+          onSaveSearch={handleSaveSearch}
+          searchSaved={searchSaved}
           onUpdateNames={(names) => {
             setValidatedNames(names);
             const session = loadSession();
@@ -320,6 +324,7 @@ export default function Home() {
       <HistoryDrawer
         isOpen={showHistoryDrawer}
         onClose={() => setShowHistoryDrawer(false)}
+        onReuse={handleReuse}
       />
     </main>
   );

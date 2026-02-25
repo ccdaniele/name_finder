@@ -18,6 +18,8 @@ interface ResultsListProps {
   exclusionNames: string[];
   validationConfig: ValidationConfig;
   onUpdateNames: (names: ValidatedName[]) => void;
+  onSaveSearch?: () => void;
+  searchSaved?: boolean;
 }
 
 type SortBy = "score" | "name" | "grade";
@@ -31,6 +33,8 @@ export function ResultsList({
   exclusionNames,
   validationConfig,
   onUpdateNames,
+  onSaveSearch,
+  searchSaved,
 }: ResultsListProps) {
   const [sortBy, setSortBy] = useState<SortBy>("score");
   const [filterGrade, setFilterGrade] = useState<FilterGrade>("all");
@@ -165,6 +169,30 @@ export function ResultsList({
           </button>
         </div>
       </div>
+
+      {onSaveSearch && !searchSaved && (
+        <div className="mb-4 p-3 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 rounded-lg flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">Save this search?</p>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Save your preferences to reuse later (names won&apos;t be saved).
+            </p>
+          </div>
+          <button
+            onClick={onSaveSearch}
+            className="px-4 py-1.5 text-sm bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg hover:opacity-90 transition-opacity shrink-0 ml-3"
+          >
+            Save Search
+          </button>
+        </div>
+      )}
+      {searchSaved && (
+        <div className="mb-4 p-3 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 rounded-lg">
+          <p className="text-sm text-green-700 dark:text-green-400">
+            Search saved! You can reuse it from the History drawer.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-center gap-2">

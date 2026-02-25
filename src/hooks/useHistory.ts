@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import {
   loadHistory,
-  addSearchToHistory,
+  addNamesToExclusions as addNamesToExclusionsStorage,
   removeExclusion as removeExclusionFromStorage,
   clearExclusionList,
   importExclusions as importExclusionsToStorage,
@@ -11,7 +11,12 @@ import {
   deleteSearchFromHistory,
   clearHistory,
 } from "@/lib/storage/history-storage";
-import type { HistoryData, SearchHistoryEntry, ExclusionEntry } from "@/lib/types";
+import type {
+  HistoryData,
+  ExclusionEntry,
+  ValidatedName,
+  FailedName,
+} from "@/lib/types";
 
 const EMPTY_HISTORY: HistoryData = { version: 1, searches: [], exclusionList: [] };
 
@@ -27,9 +32,9 @@ export function useHistory() {
     setData(loadHistory());
   }, []);
 
-  const addSearch = useCallback(
-    (entry: SearchHistoryEntry) => {
-      addSearchToHistory(entry);
+  const addExclusions = useCallback(
+    (searchId: string, validatedNames: ValidatedName[], failedNames: FailedName[]) => {
+      addNamesToExclusionsStorage(searchId, validatedNames, failedNames);
       refresh();
     },
     [refresh]
@@ -81,10 +86,9 @@ export function useHistory() {
   );
 
   return {
-    searches: data.searches,
     exclusionList: data.exclusionList,
     exclusionNames: data.exclusionList.map((e) => e.name),
-    addSearch,
+    addExclusions,
     removeExclusion,
     clearExclusions,
     importExclusions,

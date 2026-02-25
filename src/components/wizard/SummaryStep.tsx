@@ -7,6 +7,7 @@ interface SummaryStepProps {
   summary: PreferenceSummary;
   onConfirm: (updated: PreferenceSummary) => void;
   onBack: () => void;
+  skipInterview?: boolean;
 }
 
 const COMMON_CLASSES: UsptoClass[] = [
@@ -17,7 +18,7 @@ const COMMON_CLASSES: UsptoClass[] = [
   { classNumber: 42, className: "Technology Services (SaaS)", rationale: "Covers SaaS, cloud computing, software development services" },
 ];
 
-export function SummaryStep({ summary, onConfirm, onBack }: SummaryStepProps) {
+export function SummaryStep({ summary, onConfirm, onBack, skipInterview }: SummaryStepProps) {
   const [editedSummary, setEditedSummary] = useState(summary);
   const [showClassPicker, setShowClassPicker] = useState(false);
 
@@ -180,7 +181,7 @@ export function SummaryStep({ summary, onConfirm, onBack }: SummaryStepProps) {
           onClick={() => onConfirm(editedSummary)}
           className="flex-1 px-4 py-3 text-sm font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg hover:opacity-90 transition-opacity"
         >
-          Confirm & Start Interview
+          {skipInterview ? "Confirm & Generate" : "Confirm & Start Interview"}
         </button>
       </div>
     </div>

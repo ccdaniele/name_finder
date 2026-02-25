@@ -24,6 +24,7 @@ interface WizardState {
   interviewInsights: string;
   validatedNames: ValidatedName[];
   failedNames: FailedName[];
+  skipInterview: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -38,6 +39,7 @@ const INITIAL_STATE: WizardState = {
   interviewInsights: "",
   validatedNames: [],
   failedNames: [],
+  skipInterview: false,
   isLoading: false,
   error: null,
 };
@@ -116,6 +118,10 @@ export function useWizard() {
     []
   );
 
+  const setSkipInterview = useCallback((skipInterview: boolean) => {
+    setState((prev) => ({ ...prev, skipInterview }));
+  }, []);
+
   const setLoading = useCallback((isLoading: boolean) => {
     setState((prev) => ({ ...prev, isLoading }));
   }, []);
@@ -142,6 +148,7 @@ export function useWizard() {
     addValidatedName,
     addFailedName,
     replaceValidatedName,
+    setSkipInterview,
     setLoading,
     setError,
     reset,
